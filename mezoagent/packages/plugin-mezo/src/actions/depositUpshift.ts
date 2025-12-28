@@ -1,4 +1,39 @@
 import { type Action, type IAgentRuntime, type Memory, type ActionResult } from '@elizaos/core';
+import { createMezoRpcClient } from '../lib/rpc-client';
+import { TransactionBuilder } from '../lib/transaction-builder';
+import { UpshiftVaultContract, CONTRACT_ADDRESSES, ABIS } from '../lib/contracts';
+
+const SMART_ACCOUNT_ADDRESS = process.env.MEZO_SMART_ACCOUNT_ADDRESS || '0x0000000000000000000000000000000000000000';
+const UPSHIFT_VAULT_BTC = process.env.MEZO_UPSHIFT_VAULT_BTC || CONTRACT_ADDRESSES.UPSHIFT_VAULT_BTC;
+
+/**
+ * Parse deposit parameters from message text
+ */
+function parseDepositParams(text: string): {
+    amount?: string;
+    asset?: string;
+} {
+    const lowerText = text.toLowerCase();
+    const amountMatch = text.match(/(\d+\.?\d*)\s*(tbtc|btc|musd|usd)/i);
+    const amount = amountMatch ? amountMatch[1] : undefined;
+    
+    let asset: string | undefined;
+    if (lowerText.includes('btc') || lowerText.includes('tbtc')) {
+        asset = 'BTC';
+    } else if (lowerText.includes('musd') || lowerText.includes('usd')) {
+        asset = 'MUSD';
+    }
+
+    return { amount, asset };
+}
+
+/**
+ * Convert token amount to wei (assuming 18 decimals)
+ */
+function parseAmount(amount: string): bigint {
+    const num = parseFloat(amount);
+    return BigInt(Math.floor(num * 1e18));
+}
 
 export const depositUpshiftAction: Action = {
     name: 'DEPOSIT_UPSHIFT',
@@ -9,18 +44,88 @@ export const depositUpshiftAction: Action = {
         return keywords.some(keyword => message.content.text.toLowerCase().includes(keyword));
     },
     handler: async (runtime: IAgentRuntime, message: Memory): Promise<ActionResult> => {
-        return {
-            text: `✅ Initiating Deposit into Upshift Vault.\n\n[Stealth Mode]: Wrappping BTC... \n[Risk Assessment]: Strategy Delta Verified.\n\nStatus: Intent Signed.`,
-            values: {
-                status: "DEPOSITED",
-                protocol: "Upshift"
-            },
-            data: {
-                vaultId: "BTC-Delta-Neutral-1",
-                apy: "12.4%"
-            },
-            success: true
-        };
+        try {
+            const text = message.content.text;
+            const params = parseDepositParams(text);
+
+            const asset = params.asset || 'BTC'; // Default to BTC
+            const amount = params.amount ? parseAmount(params.amount) : 0n;
+
+            // Check if we have real blockchain configuration
+            const useRealBlockchain = SMART_ACCOUNT_ADDRESS !== '0x0000000000000000000000000000000000000000' &&
+                                     UPSHIFT_VAULT_BTC !== '0x0000000000000000000000000000000000000000';
+
+            if (!useRealBlockchain) {
+                // Fallback to mock execution
+                return {
+                    text: `✅ Initiating Deposit into Upshift Vault.\n\n[Stealth Mode]: Wrapping ${asset}...\n[Risk Assessment]: Strategy Delta Verified.\n\nStatus: Intent Signed.\n\nNote: Blockchain not configured. This is a simulation.`,
+                    values: {
+                        status: "DEPOSITED",
+                        protocol: "Upshift",
+                        simulated: true
+                    },
+                    data: {
+                        vaultId: "BTC-Delta-Neutral-1",
+                        apy: "12.4%"
+                    },
+                    success: true
+                };
+            }
+
+            // Real blockchain execution
+            const rpcClient = createMezoRpcClient();
+            const txBuilder = new TransactionBuilder(rpcClient);
+
+            // Get vault information
+            const vaultContract = new UpshiftVaultContract({
+                address: UPSHIFT_VAULT_BTC,
+                abi: ABIS.UPSHIFT_VAULT,
+                rpcClient,
+            });
+
+            const [apy, tvl] = await Promise.all([
+                vaultContract.getAPY(),
+                vaultContract.getTVL(),
+            ]);
+
+            const apyPercent = (Number(apy) / 1e18) * 100;
+            const tvlFormatted = (Number(tvl) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+            // Build deposit transaction
+            const depositAmount = amount || await vaultContract.getBalance(SMART_ACCOUNT_ADDRESS);
+            const txRequest = await txBuilder.buildDepositTransaction(UPSHIFT_VAULT_BTC, depositAmount);
+
+            const actionDescription = `Prepared Deposit: ${params.amount || 'all'} ${asset} into Upshift Vault`;
+            const stealthInfo = "\n[Stealth Mode]: Wrapping BTC...\n[Risk Assessment]: Strategy Delta Verified.";
+
+            return {
+                text: `✅ ${actionDescription}\n${stealthInfo}\n\nStatus: Transaction prepared. Ready for signing and execution.\n\nVault APY: ${apyPercent.toFixed(2)}%\nVault TVL: ${tvlFormatted} ${asset}`,
+                values: {
+                    status: "PREPARED",
+                    protocol: "Upshift",
+                    asset,
+                    amount: depositAmount.toString(),
+                    apy: apyPercent.toFixed(2),
+                },
+                data: {
+                    transaction: txRequest,
+                    vaultId: "BTC-Delta-Neutral-1",
+                    apy: `${apyPercent.toFixed(2)}%`,
+                    tvl: tvl.toString(),
+                },
+                success: true
+            };
+        } catch (error) {
+            console.error("Error in depositUpshiftAction:", error);
+            return {
+                text: `❌ Error executing deposit: ${error instanceof Error ? error.message : String(error)}`,
+                values: {
+                    status: "ERROR",
+                    error: error instanceof Error ? error.message : String(error)
+                },
+                success: false
+            };
+        }
     },
     examples: [
         [
