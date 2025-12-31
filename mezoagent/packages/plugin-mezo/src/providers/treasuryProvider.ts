@@ -1,4 +1,4 @@
-g/**
+/**
  * Treasury Management Provider
  * Autonomously maintains operational funds for the Mezo Agent
  */
@@ -273,7 +273,7 @@ export async function monitorHealth(
 
         // Auto-harvest if enabled and threshold met
         if (config.funding.autoHarvestEnabled) {
-            const _harvestThreshold = config.funding.harvestThreshold;
+            // const harvestThreshold = config.funding.harvestThreshold;
             // In production, check if yields >= threshold before harvesting
             // For now, we'll skip automatic harvesting
         }
@@ -369,7 +369,7 @@ export const treasuryProvider: Provider = {
                 },
             };
 
-            const metrics = await getTreasuryMetrics(runtime, config);
+            const metrics = await getTreasuryMetrics(_runtime, config);
 
             const statusEmoji = {
                 healthy: '✅',
