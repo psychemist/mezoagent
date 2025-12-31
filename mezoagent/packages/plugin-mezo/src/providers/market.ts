@@ -75,9 +75,9 @@ const marketProvider: Provider = {
 
             // Check if we have real blockchain configuration
             const useRealBlockchain = tigrisDex !== '0x0000000000000000000000000000000000000000' &&
-                                     upshiftVault !== '0x0000000000000000000000000000000000000000' &&
-                                     TOKEN_ADDRESSES.tBTC !== '0x0000000000000000000000000000000000000000' &&
-                                     TOKEN_ADDRESSES.MUSD !== '0x0000000000000000000000000000000000000000';
+                upshiftVault !== '0x0000000000000000000000000000000000000000' &&
+                TOKEN_ADDRESSES.tBTC !== '0x0000000000000000000000000000000000000000' &&
+                TOKEN_ADDRESSES.MUSD !== '0x0000000000000000000000000000000000000000';
 
             if (!useRealBlockchain) {
                 // Fallback to mock data
@@ -154,7 +154,7 @@ Upshift Vaults:
             console.error("Error in marketProvider:", error);
             return {
                 values: {},
-                data: null,
+                data: undefined,
                 text: `Error fetching Mezo Market data: ${error instanceof Error ? error.message : String(error)}`
             };
         }

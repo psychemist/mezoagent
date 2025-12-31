@@ -408,7 +408,7 @@ Last 24 Hours:
             console.error('Error in treasuryProvider:', error);
             return {
                 values: {},
-                data: null,
+                data: undefined,
                 text: `Error fetching treasury data: ${error instanceof Error ? error.message : String(error)}`,
             };
         }

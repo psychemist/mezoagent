@@ -398,7 +398,7 @@ Supported Tokens: ${config.treasury.supportedTokens.join(', ')}
             console.error('Error in x402Provider:', error);
             return {
                 values: {},
-                data: null,
+                data: undefined,
                 text: `Error fetching X402 payment data: ${error instanceof Error ? error.message : String(error)}`,
             };
         }

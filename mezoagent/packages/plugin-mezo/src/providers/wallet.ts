@@ -40,7 +40,7 @@ async function getTokenBalance(
         const divisor = BigInt(10 ** decimals);
         const wholePart = balance / divisor;
         const fractionalPart = balance % divisor;
-        
+
         return `${wholePart}.${fractionalPart.toString().padStart(decimals, '0')}`;
     } catch (error) {
         console.error(`Error fetching balance for token ${tokenAddress}:`, error);
@@ -60,7 +60,7 @@ async function getNativeBalance(
         const divisor = BigInt(10 ** 18);
         const wholePart = balance / divisor;
         const fractionalPart = balance % divisor;
-        
+
         return `${wholePart}.${fractionalPart.toString().padStart(18, '0')}`;
     } catch (error) {
         console.error('Error fetching native balance:', error);
@@ -88,7 +88,7 @@ async function checkSessionKey(
         });
 
         const isValid = await sessionKeyManager.isValidSessionKey(accountAddress, sessionKeyAddress);
-        const permissions = isValid 
+        const permissions = isValid
             ? await sessionKeyManager.getPermissions(accountAddress, sessionKeyAddress)
             : [];
 
@@ -138,7 +138,7 @@ const walletProvider: Provider = {
                 getTokenBalance(rpcClient, TOKEN_ADDRESSES.tBTC, accountAddress),
                 getTokenBalance(rpcClient, TOKEN_ADDRESSES.MUSD, accountAddress),
                 getNativeBalance(rpcClient, accountAddress),
-                SESSION_KEY_ADDRESS 
+                SESSION_KEY_ADDRESS
                     ? checkSessionKey(rpcClient, accountAddress, SESSION_KEY_ADDRESS)
                     : Promise.resolve({ active: false, permissions: [] }),
             ]);
@@ -178,7 +178,7 @@ Balances:
             console.error("Error in walletProvider:", error);
             return {
                 values: {},
-                data: null,
+                data: undefined,
                 text: `Error fetching Mezo Wallet data: ${error instanceof Error ? error.message : String(error)}`
             };
         }
