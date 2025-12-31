@@ -7,7 +7,6 @@ import { type IAgentRuntime, type Memory, type ActionResult, type State } from '
 import { paymentEvaluator } from '../evaluators/paymentEvaluator';
 import { autonomousPaymentAction } from '../actions/autonomousPayment';
 import { autoRefund, recordSpending } from '../providers/treasuryProvider';
-import { recordSuccess, recordFailure, recordOperation } from '../evaluators/paymentEvaluator';
 import { loadX402Config } from './config';
 
 /**
@@ -60,7 +59,6 @@ export async function wrapWithX402<T extends ActionResult>(
                     );
 
                     if (!retryFeasible) {
-                        recordFailure();
                         return {
                             text: `❌ Operation not feasible even after auto-refund. Please add funds to treasury.`,
                             values: { status: 'FAILED', reason: 'insufficient_funds' },
@@ -68,7 +66,6 @@ export async function wrapWithX402<T extends ActionResult>(
                         } as T;
                     }
                 } else {
-                    recordFailure();
                     return {
                         text: `❌ Operation not feasible and auto-refund failed: ${refundResult.error}`,
                         values: { status: 'FAILED', reason: 'auto_refund_failed' },
@@ -76,7 +73,6 @@ export async function wrapWithX402<T extends ActionResult>(
                     } as T;
                 }
             } else {
-                recordFailure();
                 return {
                     text: `❌ Operation not feasible. Treasury balance insufficient.`,
                     values: { status: 'FAILED', reason: 'insufficient_funds' },
@@ -91,23 +87,18 @@ export async function wrapWithX402<T extends ActionResult>(
 
         // 3. Record result
         if (result.success) {
-            recordSuccess();
-
             // Record spending if cost is known
             if (options?.estimatedCost) {
                 recordSpending(options.estimatedCost, actionName);
-                recordOperation(options.estimatedCost);
             }
 
             console.log(`✅ ${actionName} completed successfully`);
         } else {
-            recordFailure();
             console.log(`❌ ${actionName} failed`);
         }
 
         return result;
     } catch (error) {
-        recordFailure();
         console.error(`Error in X402 wrapper for ${actionName}:`, error);
 
         return {
