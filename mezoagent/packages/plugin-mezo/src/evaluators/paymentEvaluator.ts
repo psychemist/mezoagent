@@ -124,7 +124,7 @@ export function incrementRateLimit(): void {
  * Validate payment feasibility
  */
 async function validatePaymentFeasibility(
-    runtime: IAgentRuntime,
+    _runtime: IAgentRuntime,
     operationType: string,
     operationParams: any
 ): Promise<{ valid: boolean; reason: string; details?: any }> {
@@ -249,20 +249,20 @@ export const paymentEvaluator: Evaluator = {
     name: 'PAYMENT_FEASIBILITY',
     description: 'Evaluates whether an operation is financially feasible before execution',
     similes: ['CAN_AFFORD', 'PAYMENT_CHECK', 'COST_VALIDATION'],
-    validate: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
+    validate: async (_runtime: IAgentRuntime, _message: Memory, state?: State) => {
         // Extract operation type from message or state
-        const operationType = state?.operationType || 'unknown';
+        const operationType = (state?.operationType as string) || 'unknown';
         const operationParams = state?.operationParams || {};
 
-        const result = await validatePaymentFeasibility(runtime, operationType, operationParams);
+        const result = await validatePaymentFeasibility(_runtime, operationType, operationParams);
 
         return result.valid;
     },
-    handler: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
-        const operationType = state?.operationType || 'unknown';
+    handler: async (_runtime: IAgentRuntime, _message: Memory, state?: State) => {
+        const operationType = (state?.operationType as string) || 'unknown';
         const operationParams = state?.operationParams || {};
 
-        const result = await validatePaymentFeasibility(runtime, operationType, operationParams);
+        const result = await validatePaymentFeasibility(_runtime, operationType, operationParams);
 
         if (result.valid) {
             // Increment rate limit counter
@@ -276,11 +276,12 @@ export const paymentEvaluator: Evaluator = {
                 operationType,
             },
             data: result.details,
+            success: result.valid,
         };
     },
     examples: [
         {
-            context: "User wants to execute a swap",
+            prompt: "User wants to execute a swap",
             messages: [
                 {
                     name: "{{name1}}",
