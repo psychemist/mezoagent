@@ -1,7 +1,7 @@
- /**
- * Autonomous Payment Action
- * Executes operations with self-managed payment routing
- */
+/**
+* Autonomous Payment Action
+* Executes operations with self-managed payment routing
+*/
 
 import { type Action, type IAgentRuntime, type Memory, type ActionResult } from '@elizaos/core';
 import { ethers } from 'ethers';
@@ -48,7 +48,7 @@ const DEFAULT_CONFIG = {
  * Execute operation with autonomous payment
  */
 async function executeWithPayment(
-    runtime: IAgentRuntime,
+    _runtime: IAgentRuntime,
     targetAction: string,
     params: any
 ): Promise<AutonomousPaymentResult> {
@@ -157,13 +157,14 @@ export const autonomousPaymentAction: Action = {
     name: 'AUTONOMOUS_PAYMENT',
     similes: ['PAY_FOR_OPERATION', 'EXECUTE_WITH_PAYMENT', 'SELF_PAY'],
     description: 'Execute an operation with autonomous payment management',
-    validate: async (runtime: IAgentRuntime, message: Memory) => {
+    validate: async (_runtime: IAgentRuntime, message: Memory) => {
         // This action is typically called programmatically by other actions
         // rather than directly from user messages
-        return message.content.text.toLowerCase().includes('autonomous payment') ||
-            message.content.text.toLowerCase().includes('self-pay');
+        const text = message.content.text || '';
+        return text.toLowerCase().includes('autonomous payment') ||
+            text.toLowerCase().includes('self-pay');
     },
-    handler: async (runtime: IAgentRuntime, message: Memory): Promise<ActionResult> => {
+    handler: async (runtime: IAgentRuntime, _message: Memory): Promise<ActionResult> => {
         try {
             // Parse parameters from message
             // In production, this would be called with structured params
@@ -210,7 +211,7 @@ Reason: ${result.paymentMethod.reason}
                     paymentMethod: result.paymentMethod.method,
                     balanceAfter: result.treasuryBalanceAfter.toString(),
                 },
-                data: result,
+                data: result as unknown as Record<string, unknown>,
                 success: true,
             };
         } catch (error) {

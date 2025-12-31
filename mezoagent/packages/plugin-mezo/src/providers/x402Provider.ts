@@ -177,7 +177,7 @@ async function getTreasuryState(
 async function estimateOperationGas(
     provider: ethers.JsonRpcProvider,
     action: string,
-    params: any,
+    _params: any,
     config: X402Config
 ): Promise<GasEstimate> {
     try {
@@ -336,13 +336,13 @@ function getPaymasterAddress(config: X402Config): string | null {
 export const x402Provider: Provider = {
     name: 'X402_PAYMENT',
     description: 'Provides self-autonomous payment capabilities and treasury management',
-    get: async (runtime: IAgentRuntime, message: Memory, _state?: State) => {
+    get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
         try {
             // Load configuration
             const config = DEFAULT_X402_CONFIG;
 
             // Create provider
-            const rpcClient = createMezoRpcClient();
+            const _rpcClient = createMezoRpcClient();
             const provider = new ethers.JsonRpcProvider(
                 process.env.MEZO_RPC_URL || 'https://rpc.mezo.org'
             );
