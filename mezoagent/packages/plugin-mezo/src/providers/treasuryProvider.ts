@@ -1,4 +1,4 @@
-/**
+g/**
  * Treasury Management Provider
  * Autonomously maintains operational funds for the Mezo Agent
  */
@@ -13,7 +13,6 @@ import type {
     X402Config,
 } from '../types/x402';
 import { x402Utils } from './x402Provider';
-import { createMezoRpcClient } from '../lib/rpc-client';
 
 // Historical spending tracking
 interface SpendingRecord {
@@ -114,7 +113,7 @@ function determineHealthStatus(
 /**
  * Harvest yields from Upshift positions
  */
-export async function harvestYields(runtime: IAgentRuntime): Promise<HarvestResult> {
+export async function harvestYields(_runtime: IAgentRuntime): Promise<HarvestResult> {
     try {
         // This would integrate with the Upshift protocol to claim yields
         // For now, we'll return a mock result
@@ -227,7 +226,7 @@ export async function autoRefund(
 /**
  * Rebalance treasury across multiple tokens
  */
-export async function rebalanceTreasury(runtime: IAgentRuntime): Promise<void> {
+export async function rebalanceTreasury(_runtime: IAgentRuntime): Promise<void> {
     try {
         console.log('⚖️ Rebalancing treasury...');
 
@@ -274,7 +273,7 @@ export async function monitorHealth(
 
         // Auto-harvest if enabled and threshold met
         if (config.funding.autoHarvestEnabled) {
-            const harvestThreshold = config.funding.harvestThreshold;
+            const _harvestThreshold = config.funding.harvestThreshold;
             // In production, check if yields >= threshold before harvesting
             // For now, we'll skip automatic harvesting
         }
@@ -287,7 +286,7 @@ export async function monitorHealth(
  * Get current treasury metrics
  */
 async function getTreasuryMetrics(
-    runtime: IAgentRuntime,
+    _runtime: IAgentRuntime,
     config: X402Config
 ): Promise<TreasuryMetrics> {
     const provider = new ethers.JsonRpcProvider(
@@ -332,7 +331,7 @@ async function getTreasuryMetrics(
 export const treasuryProvider: Provider = {
     name: 'TREASURY_HEALTH',
     description: 'Provides real-time treasury health metrics and management capabilities',
-    get: async (runtime: IAgentRuntime, message: Memory, _state?: State) => {
+    get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
         try {
             // Load configuration
             const config = {
@@ -401,7 +400,7 @@ Last 24 Hours:
                     spent24h: metrics.totalSpent24h.toString(),
                     operations24h: metrics.operationCount24h,
                 },
-                data: metrics,
+                data: metrics as unknown as Record<string, unknown>,
                 text: contextText,
             };
         } catch (error) {

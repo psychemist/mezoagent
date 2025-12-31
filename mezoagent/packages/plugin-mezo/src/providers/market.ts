@@ -67,7 +67,7 @@ async function getVaultData(
 const marketProvider: Provider = {
     name: 'MEZO_MARKET',
     description: 'Provides real-time market data from Tigris DEX and Upshift Vaults',
-    get: async (runtime: IAgentRuntime, message: Memory, _state?: State) => {
+    get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
         try {
             const rpcClient = createMezoRpcClient();
             const tigrisDex = CONTRACT_ADDRESSES.TIGRIS_DEX;
@@ -109,7 +109,7 @@ Note: Using mock data. Configure contract addresses for real-time data.
 
                 return {
                     values: MOCK_MARKET_DATA,
-                    data: MOCK_MARKET_DATA,
+                    data: MOCK_MARKET_DATA as unknown as Record<string, unknown>,
                     text: `Current Mezo Market Data:\n${info}`
                 };
             }
@@ -147,7 +147,7 @@ Upshift Vaults:
 
             return {
                 values: marketData,
-                data: marketData,
+                data: marketData as unknown as Record<string, unknown>,
                 text: `Current Mezo Market Data:\n${info}`
             };
         } catch (error) {

@@ -105,7 +105,7 @@ async function checkSessionKey(
 const walletProvider: Provider = {
     name: 'MEZO_WALLET',
     description: 'Provides details about the agent\'s Mezo Smart Account and Session Keys',
-    get: async (runtime: IAgentRuntime, message: Memory, _state?: State) => {
+    get: async (_runtime: IAgentRuntime, _message: Memory, _state?: State) => {
         try {
             const rpcClient = createMezoRpcClient();
             const accountAddress = SMART_ACCOUNT_ADDRESS;
@@ -128,7 +128,7 @@ const walletProvider: Provider = {
                         walletAddress: MOCK_SMART_ACCOUNT.address,
                         balances: MOCK_SMART_ACCOUNT.balance
                     },
-                    data: MOCK_SMART_ACCOUNT,
+                    data: MOCK_SMART_ACCOUNT as unknown as Record<string, unknown>,
                     text: `Mezo Wallet not configured. Please set MEZO_SMART_ACCOUNT_ADDRESS environment variable.`
                 };
             }
@@ -171,7 +171,7 @@ Balances:
                     sessionKeyActive: sessionKeyStatus.active,
                     permissions: sessionKeyStatus.permissions,
                 },
-                data: walletData,
+                data: walletData as unknown as Record<string, unknown>,
                 text: `Current Mezo Wallet Status:\n${walletInfo}`
             };
         } catch (error) {
