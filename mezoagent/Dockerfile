@@ -59,9 +59,11 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/scripts ./scripts
 
+COPY mezo.character.json ./
+
 ENV NODE_ENV=production
 
 EXPOSE 3000
 EXPOSE 50000-50100/udp
 
-CMD ["bun", "run", "start"]
+CMD ["bun", "start", "--", "--character", "mezo.character.json"]
