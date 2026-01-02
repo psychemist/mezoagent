@@ -46,6 +46,18 @@ export interface Character {
   /** Optional system prompt */
   system?: string;
 
+  /** Optional model provider */
+  modelProvider?: string;
+
+  /** Optional client list */
+  clients?: string[];
+
+  /** Optional lore */
+  lore?: string[];
+
+  /** X402 Configuration */
+  x402?: any;
+
   /** Optional prompt templates */
   templates?: {
     [key: string]: TemplateType;

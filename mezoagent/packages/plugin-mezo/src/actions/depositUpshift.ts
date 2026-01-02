@@ -16,7 +16,7 @@ function parseDepositParams(text: string): {
     const lowerText = text.toLowerCase();
     const amountMatch = text.match(/(\d+\.?\d*)\s*(tbtc|btc|musd|usd)/i);
     const amount = amountMatch ? amountMatch[1] : undefined;
-    
+
     let asset: string | undefined;
     if (lowerText.includes('btc') || lowerText.includes('tbtc')) {
         asset = 'BTC';
@@ -44,88 +44,110 @@ export const depositUpshiftAction: Action = {
         return keywords.some(keyword => message.content.text.toLowerCase().includes(keyword));
     },
     handler: async (runtime: IAgentRuntime, message: Memory): Promise<ActionResult> => {
-        try {
-            const text = message.content.text;
-            const params = parseDepositParams(text);
+        // Import X402 wrapper
+        const { wrapWithX402 } = await import('../utils/x402Wrapper');
 
-            const asset = params.asset || 'BTC'; // Default to BTC
-            const amount = params.amount ? parseAmount(params.amount) : 0n;
+        // Wrap execution with X402 autonomous payment
+        return await wrapWithX402(
+            runtime,
+            message,
+            'DEPOSIT_UPSHIFT',
+            async () => {
+                try {
+                    const text = message.content.text;
+                    const params = parseDepositParams(text);
 
-            // Check if we have real blockchain configuration
-            const useRealBlockchain = SMART_ACCOUNT_ADDRESS !== '0x0000000000000000000000000000000000000000' &&
-                                     UPSHIFT_VAULT_BTC !== '0x0000000000000000000000000000000000000000';
+                    const asset = params.asset || 'BTC'; // Default to BTC
+                    const amount = params.amount ? parseAmount(params.amount) : 0n;
 
-            if (!useRealBlockchain) {
-                // Fallback to mock execution
-                return {
-                    text: `✅ Initiating Deposit into Upshift Vault.\n\n[Stealth Mode]: Wrapping ${asset}...\n[Risk Assessment]: Strategy Delta Verified.\n\nStatus: Intent Signed.\n\nNote: Blockchain not configured. This is a simulation.`,
-                    values: {
-                        status: "DEPOSITED",
-                        protocol: "Upshift",
-                        simulated: true
-                    },
-                    data: {
-                        vaultId: "BTC-Delta-Neutral-1",
-                        apy: "12.4%"
-                    },
-                    success: true
-                };
+                    // Check if we have real blockchain configuration
+                    const useRealBlockchain = SMART_ACCOUNT_ADDRESS !== '0x0000000000000000000000000000000000000000' &&
+                        UPSHIFT_VAULT_BTC !== '0x0000000000000000000000000000000000000000';
+
+                    if (!useRealBlockchain) {
+                        // Fallback to mock execution
+                        const actionDescription = `Executing Intent: Deposit ${params.amount || 'all'} ${asset} into Upshift Vault`;
+                        const stealthInfo = "\n[Stealth Mode]: Wrapping Assets...\n[Risk Assessment]: Strategy Delta Verified.";
+                        const x402Info = "\n[X402]: Payment feasibility verified ✓";
+
+                        return {
+                            text: `✅ ${actionDescription}${stealthInfo}${x402Info}\n\nStatus: Intent Submitted. Waiting for Solver execution...\n\nNote: Blockchain not configured. This is a simulation.`,
+                            values: {
+                                status: "PENDING_SOLVER",
+                                protocol: "Upshift",
+                                simulated: true,
+                                x402Enabled: true
+                            },
+                            data: {
+                                vaultId: "BTC-Delta-Neutral-1",
+                                apy: "12.4%"
+                            },
+                            success: true
+                        };
+                    }
+
+                    // Real blockchain execution
+                    const rpcClient = createMezoRpcClient();
+                    const txBuilder = new TransactionBuilder(rpcClient);
+
+                    // Get vault information
+                    const vaultContract = new UpshiftVaultContract({
+                        address: UPSHIFT_VAULT_BTC,
+                        abi: ABIS.UPSHIFT_VAULT,
+                        rpcClient,
+                    });
+
+                    const [apy, tvl] = await Promise.all([
+                        vaultContract.getAPY(),
+                        vaultContract.getTVL(),
+                    ]);
+
+                    const apyPercent = (Number(apy) / 1e18) * 100;
+                    const tvlFormatted = (Number(tvl) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+                    // Build deposit transaction
+                    const depositAmount = amount || await vaultContract.getBalance(SMART_ACCOUNT_ADDRESS);
+                    const txRequest = await txBuilder.buildDepositTransaction(UPSHIFT_VAULT_BTC, depositAmount);
+
+                    const actionDescription = `Prepared Deposit: ${params.amount || 'all'} ${asset} into Upshift Vault`;
+                    const stealthInfo = "\n[Stealth Mode]: Wrapping BTC...\n[Risk Assessment]: Strategy Delta Verified.";
+                    const x402Info = "\n[X402]: Gas payment optimized ✓";
+
+                    return {
+                        text: `✅ ${actionDescription}\n${stealthInfo}${x402Info}\n\nStatus: Transaction prepared. Ready for signing and execution.\n\nVault APY: ${apyPercent.toFixed(2)}%\nVault TVL: ${tvlFormatted} ${asset}`,
+                        values: {
+                            status: "PREPARED",
+                            protocol: "Upshift",
+                            asset,
+                            amount: depositAmount.toString(),
+                            apy: apyPercent.toFixed(2),
+                            x402Enabled: true
+                        },
+                        data: {
+                            transaction: txRequest,
+                            vaultId: "BTC-Delta-Neutral-1",
+                            apy: `${apyPercent.toFixed(2)}%`,
+                            tvl: tvl.toString(),
+                        },
+                        success: true
+                    };
+                } catch (error) {
+                    console.error("Error in depositUpshiftAction:", error);
+                    return {
+                        text: `❌ Error executing deposit: ${error instanceof Error ? error.message : String(error)}`,
+                        values: {
+                            status: "ERROR",
+                            error: error instanceof Error ? error.message : String(error)
+                        },
+                        success: false
+                    };
+                }
+            },
+            {
+                critical: false,
+                estimatedCost: 150000n * 50000000000n, // Estimated: 150k gas
             }
-
-            // Real blockchain execution
-            const rpcClient = createMezoRpcClient();
-            const txBuilder = new TransactionBuilder(rpcClient);
-
-            // Get vault information
-            const vaultContract = new UpshiftVaultContract({
-                address: UPSHIFT_VAULT_BTC,
-                abi: ABIS.UPSHIFT_VAULT,
-                rpcClient,
-            });
-
-            const [apy, tvl] = await Promise.all([
-                vaultContract.getAPY(),
-                vaultContract.getTVL(),
-            ]);
-
-            const apyPercent = (Number(apy) / 1e18) * 100;
-            const tvlFormatted = (Number(tvl) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 0 });
-
-            // Build deposit transaction
-            const depositAmount = amount || await vaultContract.getBalance(SMART_ACCOUNT_ADDRESS);
-            const txRequest = await txBuilder.buildDepositTransaction(UPSHIFT_VAULT_BTC, depositAmount);
-
-            const actionDescription = `Prepared Deposit: ${params.amount || 'all'} ${asset} into Upshift Vault`;
-            const stealthInfo = "\n[Stealth Mode]: Wrapping BTC...\n[Risk Assessment]: Strategy Delta Verified.";
-
-            return {
-                text: `✅ ${actionDescription}\n${stealthInfo}\n\nStatus: Transaction prepared. Ready for signing and execution.\n\nVault APY: ${apyPercent.toFixed(2)}%\nVault TVL: ${tvlFormatted} ${asset}`,
-                values: {
-                    status: "PREPARED",
-                    protocol: "Upshift",
-                    asset,
-                    amount: depositAmount.toString(),
-                    apy: apyPercent.toFixed(2),
-                },
-                data: {
-                    transaction: txRequest,
-                    vaultId: "BTC-Delta-Neutral-1",
-                    apy: `${apyPercent.toFixed(2)}%`,
-                    tvl: tvl.toString(),
-                },
-                success: true
-            };
-        } catch (error) {
-            console.error("Error in depositUpshiftAction:", error);
-            return {
-                text: `❌ Error executing deposit: ${error instanceof Error ? error.message : String(error)}`,
-                values: {
-                    status: "ERROR",
-                    error: error instanceof Error ? error.message : String(error)
-                },
-                success: false
-            };
-        }
+        );
     },
     examples: [
         [

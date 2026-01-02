@@ -66,7 +66,7 @@ const rateLimitWindow: RateLimitWindow = {
 function checkCircuitBreakerReset(): void {
     const now = Date.now();
     if (circuitBreakerTripped && (now - lastResetAttempt) >= CIRCUIT_BREAKER_RESET_INTERVAL) {
-        console.log('🔄 Attempting to reset circuit breaker...');
+        console.log(' Attempting to reset circuit breaker...');
         circuitBreakerTripped = false;
         consecutiveFailures = 0;
         lastResetAttempt = now;
@@ -82,7 +82,7 @@ export function recordOperationResult(success: boolean): void {
     } else {
         consecutiveFailures++;
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            console.error(`🚨 Circuit breaker tripped after ${consecutiveFailures} consecutive failures`);
+            console.error(` Circuit breaker tripped after ${consecutiveFailures} consecutive failures`);
             circuitBreakerTripped = true;
             lastResetAttempt = Date.now();
         }

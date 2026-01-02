@@ -1,4 +1,4 @@
-# Mezo Agent
+# MezoAgent
 
 **Mezo Agent** is an autonomous AI agent designed for decentralized finance (DeFi) operations on the Mezo ecosystem. Built on top of the powerful [ElizaOS](https://github.com/elizaos/eliza) framework, this agent is capable of executing complex financial strategies, managing assets, and interacting with core Mezo protocols like Tigris and Upshift.
 

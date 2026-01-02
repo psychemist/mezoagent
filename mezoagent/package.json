@@ -1,5 +1,5 @@
 {
-  "name": "eliza",
+  "name": "mezoagent",
   "version": "1.4.4",
   "module": "index.ts",
   "type": "module",

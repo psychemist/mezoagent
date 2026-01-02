@@ -130,6 +130,10 @@ export const characterSchema = z
       .string()
       .optional()
       .describe("System prompt that defines the character's core behavior and response style"),
+    modelProvider: z.string().optional().describe('Model provider to use'),
+    clients: z.array(z.string()).optional().describe('List of clients to start'),
+    lore: z.array(z.string()).optional().describe('Character lore and backstory'),
+    x402: z.any().optional().describe('X402 Autonomous Payment Configuration'),
     templates: z
       .record(z.string(), templateTypeSchema)
       .optional()
