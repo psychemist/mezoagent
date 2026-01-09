@@ -102,7 +102,10 @@ export function PortfolioView({
     totalValue: externalTotalValue,
     className
 }: PortfolioViewProps) {
-    const [assets] = useState<PortfolioAsset[]>(externalAssets || MOCK_ASSETS);
+    // Use prop if available, otherwise default to mocks (only if not live data loading)
+    // If externalAssets is passed (even empty array), we use it. If undefined, we might fall back.
+    // However, for "simulation mode" vs "real mode", the parent controls this.
+    const assets = useMemo(() => externalAssets || MOCK_ASSETS, [externalAssets]);
     const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart');
     const [groupBy, setGroupBy] = useState<'asset' | 'protocol' | 'type'>('asset');
 

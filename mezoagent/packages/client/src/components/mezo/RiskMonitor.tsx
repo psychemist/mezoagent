@@ -71,24 +71,32 @@ const MOCK_METRICS: RiskMetric[] = [
     }
 ];
 
-export function RiskMonitor({ 
+export function RiskMonitor({
     metrics: externalMetrics,
     autoRefresh = true,
     refreshInterval = 5000,
-    className 
+    className
 }: RiskMonitorProps) {
     const [metrics, setMetrics] = useState<RiskMetric[]>(externalMetrics || MOCK_METRICS);
     const [lastUpdate, setLastUpdate] = useState(new Date());
 
+    // Sync with props
     useEffect(() => {
-        if (!autoRefresh) return;
+        if (externalMetrics) {
+            setMetrics(externalMetrics);
+        }
+    }, [externalMetrics]);
+
+    useEffect(() => {
+        // Only run simulation if enabled AND no external metrics provided (or forced)
+        if (!autoRefresh || externalMetrics) return;
 
         const interval = setInterval(() => {
             // Simulate metric updates
             setMetrics(prev => prev.map(metric => {
                 const variance = (Math.random() - 0.5) * 0.02;
                 let newValue = metric.value + variance;
-                
+
                 // Keep values within reasonable bounds
                 if (metric.id === 'musd-peg') {
                     newValue = Math.max(0.95, Math.min(1.05, newValue));
@@ -108,9 +116,9 @@ export function RiskMonitor({
                 }
 
                 // Determine trend
-                const trend: RiskMetric['trend'] = 
-                    newValue > metric.value ? 'UP' : 
-                    newValue < metric.value ? 'DOWN' : 'STABLE';
+                const trend: RiskMetric['trend'] =
+                    newValue > metric.value ? 'UP' :
+                        newValue < metric.value ? 'DOWN' : 'STABLE';
 
                 return {
                     ...metric,
@@ -128,7 +136,7 @@ export function RiskMonitor({
     const overallRisk = useMemo(() => {
         const criticalCount = metrics.filter(m => m.status === 'CRITICAL').length;
         const warningCount = metrics.filter(m => m.status === 'WARNING').length;
-        
+
         if (criticalCount > 0) return 'CRITICAL';
         if (warningCount > 2) return 'HIGH';
         if (warningCount > 0) return 'MEDIUM';
@@ -193,21 +201,21 @@ export function RiskMonitor({
             <Card className={cn(
                 "bg-black/50 border-2",
                 overallRisk === 'CRITICAL' ? "border-red-900/50" :
-                overallRisk === 'HIGH' ? "border-orange-900/50" :
-                overallRisk === 'MEDIUM' ? "border-yellow-900/50" :
-                "border-green-900/50"
+                    overallRisk === 'HIGH' ? "border-orange-900/50" :
+                        overallRisk === 'MEDIUM' ? "border-yellow-900/50" :
+                            "border-green-900/50"
             )}>
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm font-mono text-green-500">Overall Risk Assessment</CardTitle>
-                        <Badge 
+                        <Badge
                             variant="outline"
                             className={cn(
                                 "font-mono text-xs",
                                 overallRisk === 'CRITICAL' ? "text-red-400 border-red-900/50" :
-                                overallRisk === 'HIGH' ? "text-orange-400 border-orange-900/50" :
-                                overallRisk === 'MEDIUM' ? "text-yellow-400 border-yellow-900/50" :
-                                "text-green-400 border-green-900/50"
+                                    overallRisk === 'HIGH' ? "text-orange-400 border-orange-900/50" :
+                                        overallRisk === 'MEDIUM' ? "text-yellow-400 border-yellow-900/50" :
+                                            "text-green-400 border-green-900/50"
                             )}
                         >
                             {overallRisk}
@@ -222,7 +230,7 @@ export function RiskMonitor({
             {/* Individual Metrics */}
             <div className="space-y-3">
                 {metrics.map((metric) => (
-                    <Card 
+                    <Card
                         key={metric.id}
                         className={cn("bg-black/50 border", getStatusColor(metric.status))}
                     >
@@ -250,13 +258,13 @@ export function RiskMonitor({
                                     </div>
                                 </div>
                             </div>
-                            <Progress 
-                                value={getProgressValue(metric)} 
+                            <Progress
+                                value={getProgressValue(metric)}
                                 className={cn(
                                     "h-2",
                                     metric.status === 'CRITICAL' ? "bg-red-950/50" :
-                                    metric.status === 'WARNING' ? "bg-yellow-950/50" :
-                                    "bg-green-950/50"
+                                        metric.status === 'WARNING' ? "bg-yellow-950/50" :
+                                            "bg-green-950/50"
                                 )}
                             />
                         </CardContent>

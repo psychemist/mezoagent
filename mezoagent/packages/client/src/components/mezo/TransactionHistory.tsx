@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-    Search, 
-    Filter, 
-    ExternalLink, 
-    CheckCircle2, 
-    XCircle, 
+import {
+    Search,
+    Filter,
+    ExternalLink,
+    CheckCircle2,
+    XCircle,
     Clock,
     ArrowUpRight,
     ArrowDownRight,
@@ -99,28 +99,28 @@ const MOCK_TRANSACTIONS: Transaction[] = [
     }
 ];
 
-export function TransactionHistory({ 
+export function TransactionHistory({
     transactions: externalTransactions,
     onTransactionClick,
-    className 
+    className
 }: TransactionHistoryProps) {
     const { toast } = useToast();
-    const [transactions] = useState<Transaction[]>(externalTransactions || MOCK_TRANSACTIONS);
+    const transactions = useMemo(() => externalTransactions || MOCK_TRANSACTIONS, [externalTransactions]);
     const [searchQuery, setSearchQuery] = useState('');
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const filteredTransactions = useMemo(() => {
         return transactions.filter(tx => {
-            const matchesSearch = !searchQuery || 
+            const matchesSearch = !searchQuery ||
                 tx.hash.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 tx.protocol.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (tx.fromToken && tx.fromToken.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (tx.toToken && tx.toToken.toLowerCase().includes(searchQuery.toLowerCase()));
-            
+
             const matchesType = typeFilter === 'all' || tx.type === typeFilter;
             const matchesStatus = statusFilter === 'all' || tx.status === statusFilter;
-            
+
             return matchesSearch && matchesType && matchesStatus;
         });
     }, [transactions, searchQuery, typeFilter, statusFilter]);
@@ -241,7 +241,7 @@ export function TransactionHistory({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <Badge 
+                                                        <Badge
                                                             variant="outline"
                                                             className="font-mono text-xs border-green-900/50 text-green-400"
                                                         >

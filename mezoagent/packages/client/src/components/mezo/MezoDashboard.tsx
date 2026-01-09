@@ -10,11 +10,12 @@ import { SessionKeyManager, type SessionKey } from "./SessionKeyManager";
 import { TransactionHistory } from "./TransactionHistory";
 import { RiskMonitor } from "./RiskMonitor";
 import { PortfolioView } from "./PortfolioView";
-import { 
-    Wallet, 
-    TrendingUp, 
-    Shield, 
-    Activity, 
+import { useMezoRealData } from "../../hooks/useMezoRealData";
+import {
+    Wallet,
+    TrendingUp,
+    Shield,
+    Activity,
     AlertTriangle,
     RefreshCw,
     Settings
@@ -47,33 +48,50 @@ const MOCK_METRICS: DashboardMetrics = {
     lastUpdate: new Date()
 };
 
-export function MezoDashboard({ 
+export function MezoDashboard({
     metrics = MOCK_METRICS,
     logs,
     sessionKeys,
     onRefresh,
-    className 
+    className
 }: MezoDashboardProps) {
     const [activeTab, setActiveTab] = useState('overview');
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+    // Integration of Real Data Hook
+    const {
+        metrics: realMetrics,
+        assets: realAssets,
+        yieldData: realYieldData,
+        isLive,
+        refresh
+    } = useMezoRealData();
+
+    // Use absolute real data if live, otherwise fallback to props or mocks
+    const displayMetrics = isLive && realMetrics ? realMetrics : (metrics || MOCK_METRICS);
+    const displayAssets = isLive && realAssets ? realAssets : undefined; // PortfolioView handles undefined by using specific logic or prop
+
     const handleRefresh = async () => {
         setIsRefreshing(true);
         try {
-            await onRefresh?.();
+            if (isLive) {
+                await refresh();
+            } else {
+                await onRefresh?.();
+            }
         } finally {
             setTimeout(() => setIsRefreshing(false), 1000);
         }
     };
 
     const riskColor = useMemo(() => {
-        switch (metrics.riskLevel) {
+        switch (displayMetrics.riskLevel) {
             case 'CRITICAL': return 'text-red-500';
             case 'HIGH': return 'text-orange-500';
             case 'MEDIUM': return 'text-yellow-500';
             default: return 'text-green-500';
         }
-    }, [metrics.riskLevel]);
+    }, [displayMetrics.riskLevel]);
 
     return (
         <div className={cn("flex flex-col h-full bg-background", className)}>
@@ -108,6 +126,13 @@ export function MezoDashboard({
                     </div>
                 </div>
 
+                {/* Simulation Mode Banner */}
+                {!isLive && (
+                    <div className="bg-yellow-900/20 border-b border-yellow-900/50 p-2 text-center text-xs text-yellow-500 font-mono">
+                        ⚠ SIMULATION MODE: Configure VITE_MEZO_RPC_URL & SMART_ACCOUNT to enable real-time data.
+                    </div>
+                )}
+
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <Card className="bg-black/50 border-green-900/50">
@@ -118,7 +143,7 @@ export function MezoDashboard({
                             <div className="flex items-center gap-2">
                                 <Wallet className="w-4 h-4 text-green-500" />
                                 <span className="text-lg font-bold text-green-400 font-mono">
-                                    ${metrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    ${displayMetrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                             </div>
                         </CardContent>
@@ -132,7 +157,7 @@ export function MezoDashboard({
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4 text-green-500" />
                                 <span className="text-lg font-bold text-green-400 font-mono">
-                                    {metrics.totalYield.toFixed(2)}%
+                                    {displayMetrics.totalYield.toFixed(2)}%
                                 </span>
                             </div>
                         </CardContent>
@@ -146,7 +171,7 @@ export function MezoDashboard({
                             <div className="flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-green-500" />
                                 <span className="text-lg font-bold text-green-400 font-mono">
-                                    {metrics.activePositions}
+                                    {displayMetrics.activePositions}
                                 </span>
                             </div>
                         </CardContent>
@@ -159,11 +184,11 @@ export function MezoDashboard({
                         <CardContent>
                             <div className="flex items-center gap-2">
                                 <AlertTriangle className={cn("w-4 h-4", riskColor)} />
-                                <Badge 
+                                <Badge
                                     variant="outline"
                                     className={cn("font-mono", riskColor, "border-current")}
                                 >
-                                    {metrics.riskLevel}
+                                    {displayMetrics.riskLevel}
                                 </Badge>
                             </div>
                         </CardContent>
@@ -201,7 +226,7 @@ export function MezoDashboard({
                                     <CardDescription className="text-green-700">7-day APY trend</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <YieldChart />
+                                    <YieldChart data={realYieldData} />
                                 </CardContent>
                             </Card>
 
@@ -228,7 +253,7 @@ export function MezoDashboard({
                     </TabsContent>
 
                     <TabsContent value="portfolio" className="flex-1 overflow-auto p-4 mt-0">
-                        <PortfolioView />
+                        <PortfolioView assets={displayAssets} totalValue={displayMetrics.totalValue} />
                     </TabsContent>
 
                     <TabsContent value="transactions" className="flex-1 overflow-auto p-4 mt-0">
@@ -265,11 +290,11 @@ export function MezoDashboard({
             {/* Footer */}
             <div className="border-t border-border p-2 bg-card">
                 <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Last updated: {metrics.lastUpdate.toLocaleTimeString()}</span>
+                    <span>Last updated: {displayMetrics.lastUpdate.toLocaleTimeString()}</span>
                     <span className="font-mono text-green-700">MEZO v1.0.0</span>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
 
