@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { DashboardMetrics } from '../components/mezo/MezoDashboard';
-import { PortfolioAsset } from '../components/mezo/PortfolioView';
-import { YieldDataPoint } from '../components/mezo/YieldChart';
+import type { DashboardMetrics } from '../components/mezo/MezoDashboard';
+import type { PortfolioAsset } from '../components/mezo/PortfolioView';
+import type { YieldDataPoint } from '../components/mezo/YieldChart';
 
 // Default addresses for testnet/simulation if not provided
 const DEFAULTS = {
@@ -44,7 +44,7 @@ export function useMezoRealData(): UseMezoRealDataResult {
 
         try {
             // Helper for RPC calls
-            const rpcCall = async (method: string, params: any[]) => {
+            const rpcCall = async (method: string, params: unknown[]) => {
                 const response = await fetch(config.rpcUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -140,9 +140,10 @@ export function useMezoRealData(): UseMezoRealDataResult {
             // Note: YieldData is left undefined to let the chart handle 'loading' or empty state
             // or we could fetch logs to build it. For now, we focus on Portfolio.
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to fetch Mezo data:', err);
-            setError(err.message || 'Failed to fetch data');
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }

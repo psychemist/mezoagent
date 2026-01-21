@@ -4,8 +4,9 @@
   "module": "index.ts",
   "type": "module",
   "engines": {
-    "node": "23.3.0"
-  },
+  "node": "24.x"
+},
+
   "scripts": {
     "postinstall": "git submodule update --init --recursive",
     "start": "turbo run start --filter=./packages/cli --log-prefix=none --no-cache",
