@@ -2,7 +2,7 @@
 
 **Mezo Agent** is an autonomous AI agent designed for decentralized finance (DeFi) operations on the Mezo ecosystem. Built on top of the powerful [ElizaOS](https://github.com/elizaos/eliza) framework, this agent is capable of executing complex financial strategies, managing assets, and interacting with core Mezo protocols like Tigris and Upshift.
 
-## 🚀 Features
+##  Features
 
 - **Autonomous Trading**: Execute swaps on **Tigris** with intelligent routing and execution.
 - **Yield Optimization**: Automatically deposit and manage assets in **Upshift** for optimal yield generation.
@@ -10,7 +10,7 @@
 - **Market Analysis**: Integrated market data providers give the agent context-aware decision-making capabilities.
 - **Wallet Integration**: Secure wallet management for signing and broadcasting transactions.
 
-## 🏛️ Architecture
+##  Architecture
 
 Mezo Agent leverages a modular architecture to separate core agent logic from specific DeFi integrations.
 
@@ -47,7 +47,7 @@ graph TD
     - **Providers**: Context injectors like `walletProvider` for account state and `marketProvider` for price data.
     - **Evaluators**: Logic gates like `riskEvaluator` to validate safety before execution.
 
-## 🛠️ Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -100,7 +100,7 @@ Start the agent using the CLI or the start script:
 bun run start
 ```
 
-## 📦 Project Structure
+##  Project Structure
 
 The project is a monorepo managed with Turbo:
 
@@ -110,10 +110,10 @@ The project is a monorepo managed with Turbo:
 - `packages/server`: Main entry point for the agent server.
 - `packages/cli`: Command-line interface tools.
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions are welcome! Please check the [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📜 License
+##  License
 
 MIT
