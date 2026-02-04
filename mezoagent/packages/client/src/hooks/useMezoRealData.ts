@@ -60,6 +60,72 @@ export function useMezoRealData(): UseMezoRealDataResult {
                 return data.result;
             };
 
+            // Fetch prices from CoinGecko (free API, no key needed)
+            const fetchPrices = async () => {
+                try {
+                    const response = await fetch(
+                        'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,bitcoin&vs_currencies=usd',
+                        { 
+                            headers: { 'Accept': 'application/json' },
+                            // Add timeout
+                            signal: AbortSignal.timeout(5000)
+                        }
+                    );
+                    if (!response.ok) throw new Error('Price fetch failed');
+                    const data = await response.json();
+                    return {
+                        ethPrice: data.ethereum?.usd || 3000,
+                        btcPrice: data.bitcoin?.usd || 65000,
+                    };
+                } catch (error) {
+                    console.warn('Failed to fetch prices, using defaults:', error);
+                    return { ethPrice: 3000, btcPrice: 65000 };
+                }
+            };
+
+            // Fetch session keys count
+            const fetchSessionKeysCount = async (): Promise<number> => {
+                try {
+                    // Try to fetch from SessionKeyManager contract if address is configured
+                    const sessionKeyManagerAddress = import.meta.env.VITE_MEZO_SESSION_KEY_MANAGER_ADDRESS;
+                    if (!sessionKeyManagerAddress || sessionKeyManagerAddress === '0x0000000000000000000000000000000000000000') {
+                        return 0;
+                    }
+
+                    // Function selector for getSessionKeysCount(address): 0x... (would need actual ABI)
+                    // For now, return 0 as we don't have the contract ABI in the client
+                    // This would require either:
+                    // 1. A backend API endpoint that queries the contract
+                    // 2. Including the contract ABI in the client
+                    // 3. Using a service like Alchemy/Infura that provides contract read methods
+                    return 0;
+                } catch (error) {
+                    console.warn('Failed to fetch session keys count:', error);
+                    return 0;
+                }
+            };
+
+            // Fetch yield data (basic implementation)
+            const fetchYieldData = async (): Promise<YieldDataPoint[]> => {
+                try {
+                    // For now, return empty array - would need to:
+                    // 1. Query Upshift contract for yield history
+                    // 2. Or fetch from a backend API that aggregates yield data
+                    // 3. Or use The Graph subgraph if available
+                    return [];
+                } catch (error) {
+                    console.warn('Failed to fetch yield data:', error);
+                    return [];
+                }
+            };
+
+            // Fetch all data in parallel
+            const [prices, sessionKeysCount, yieldDataResult] = await Promise.all([
+                fetchPrices(),
+                fetchSessionKeysCount(),
+                fetchYieldData(),
+            ]);
+
             // 1. Get ETH (Native) Balance
             const ethBalanceHex = await rpcCall('eth_getBalance', [config.smartAccount, 'latest']);
             const ethBalance = parseInt(ethBalanceHex, 16) / 1e18;
@@ -84,14 +150,14 @@ export function useMezoRealData(): UseMezoRealDataResult {
                 mUsdBalance = parseInt(hex, 16) / 1e18; // Assuming 18 decimals
             }
 
-            // Construct Real Assets
+            // Construct Real Assets with real prices
             const realAssets: PortfolioAsset[] = [
                 {
                     id: 'eth',
                     symbol: 'ETH',
                     name: 'Ethereum',
                     amount: ethBalance,
-                    value: ethBalance * 3000, // TODO: Fetch real price
+                    value: ethBalance * prices.ethPrice,
                     percentage: 0,
                     protocol: 'Wallet',
                     type: 'TOKEN' as const,
@@ -101,7 +167,7 @@ export function useMezoRealData(): UseMezoRealDataResult {
                     symbol: 'tBTC',
                     name: 'Tether Bitcoin',
                     amount: tBtcBalance,
-                    value: tBtcBalance * 65000, // TODO: Fetch real price
+                    value: tBtcBalance * prices.btcPrice,
                     percentage: 0,
                     protocol: 'Wallet',
                     type: 'TOKEN' as const,
@@ -132,13 +198,13 @@ export function useMezoRealData(): UseMezoRealDataResult {
                 totalValue,
                 totalYield: 0, // Hard to calc without history
                 activePositions: finalAssets.length,
-                sessionKeys: 0, // TODO: Fetch from SessionKeyManager
+                sessionKeys: sessionKeysCount,
                 riskLevel: 'LOW',
                 lastUpdate: new Date()
             });
 
-            // Note: YieldData is left undefined to let the chart handle 'loading' or empty state
-            // or we could fetch logs to build it. For now, we focus on Portfolio.
+            // Set yield data
+            setYieldData(yieldDataResult.length > 0 ? yieldDataResult : undefined);
 
         } catch (err: unknown) {
             console.error('Failed to fetch Mezo data:', err);
