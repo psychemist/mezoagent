@@ -41,6 +41,7 @@
     "start:client": "vite",
     "dev:client": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc -b && vite build",
+    "build:client": "turbo run build --filter=@elizaos/client",
     "preview": "vite preview",
     "lint": "eslint src/ && prettier --write ./src",
     "lint:check": "eslint src/",
